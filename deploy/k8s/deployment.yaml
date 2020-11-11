@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: image-server-deployment
+  labels:
+    app: image-server
+spec:
+  replicas: 2
+  minReadySeconds: 10
+  selector:
+    matchLabels:
+      app: image-server
+  template:
+    metadata:
+      labels:
+        app: image-server
+    spec:
+      containers:
+        - name: image-server-pod
+          image: tourstream/image-server:1.0.23
+          env:
+            - name: ASPNETCORE_URLS
+              value: http://*:30001
+          volumeMounts:
+            - name: app-settings
+              mountPath: /app/conf
+          ports:
+            - containerPort: 30001
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /status
+              port: 30001
+              scheme: HTTP
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /status
+              port: 30001
+              scheme: HTTP
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              memory: "2.5Gi"
+              cpu: "1000m"
+      volumes:
+        - name: app-settings
+          configMap:
+            name: app-settings
